@@ -1,0 +1,66 @@
+name: Deploy Node.js + MongoDB Todo App to Azure
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Log in with Azure (Federated Credentials)
+        if: env.AZURE_CLIENT_ID != ''
+        run: |
+          azd auth login --client-id ${{ env.AZURE_CLIENT_ID }} --federated-credential-provider "github" --tenant-id ${{ env.AZURE_TENANT_ID }}
+        shell: pwsh
+
+      - name: Log in with Azure (Client Credentials)
+        if: env.AZURE_CREDENTIALS != ''
+        run: |
+          $creds = ConvertFrom-Json $env:AZURE_CREDENTIALS
+          $clientSecret = $creds.clientSecret
+          $clientSecretMasked = $clientSecret.Substring(0, 4) + "*" * ($clientSecret.Length - 4)
+          Write-Host "Client Secret: $clientSecretMasked"
+          azd auth login --client-id $creds.clientId --client-secret $creds.clientSecret --tenant-id ${{ env.AZURE_TENANT_ID }}
+        shell: pwsh
+
+      - name: Provision Infrastructure
+        run: |
+          azd provision --no-prompt
+        env:
+          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
+
+      - name: Deploy Application
+        run: |
+          azd deploy --no-prompt
+        env:
+          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}

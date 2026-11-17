@@ -1,0 +1,55 @@
+name: Deploy Node.js + MongoDB Todo App to Azure
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+  AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+  AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+  AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+  AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      - name: Install Nodejs
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Log in with Azure (Federated Credentials)
+        if: env.AZURE_CLIENT_ID != ''
+        run: |
+          azd auth login --client-id ${{ env.AZURE_CLIENT_ID }} --federated-credential-provider "github" --tenant-id ${{ env.AZURE_TENANT_ID }} --output json | jq -r '.token' | az login --service-principal --client-id ${{ env.AZURE_CLIENT_ID }} --tenant-id ${{ env.AZURE_TENANT_ID }} --password @- --output none
+
+      - name: Log in with Azure (Client Credentials)
+        if: env.AZURE_CREDENTIALS != ''
+        run: |
+          $credentials = $env.AZURE_CREDENTIALS | ConvertFrom-Json
+          $maskedSecret = $credentials.clientSecret -replace '(.)(.*)(.)', '$1*****$3'
+          azd auth login --client-id $credentials.clientId --client-secret $maskedSecret --tenant-id $credentials.tenantId --output none
+
+      - name: Provision Infrastructure
+        run: azd provision --no-prompt
+
+      - name: Deploy Application
+        run: azd deploy --no-prompt

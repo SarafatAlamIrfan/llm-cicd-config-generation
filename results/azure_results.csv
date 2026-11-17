@@ -1,0 +1,16 @@
+No,Project,Model,Remarks,Comment
+1,Azure Pipeline Basic (Python + pytest),qwen2.5-coder:7b,Correct,Matches the original
+1,Azure Pipeline Basic (Python + pytest),qwen2.5-coder:14b,Correct,Matches the original exactly
+1,Azure Pipeline Basic (Python + pytest),deepseek-coder-v2:16b,Correct,Matches the original
+2,JavaScript E2E Express Server (Node.js + JUnit),qwen2.5-coder:7b,Partially correct,"Display name ""npm install and build"" put on the script step instead of the publish step; testResultsFormat missing (JUnit is the default, so it still works); added an extra testRunTitle"
+2,JavaScript E2E Express Server (Node.js + JUnit),qwen2.5-coder:14b,Mostly correct,"All tasks and inputs right; only the display names moved (script step labelled ""npm install and build"", publish step renamed)"
+2,JavaScript E2E Express Server (Node.js + JUnit),deepseek-coder-v2:16b,Correct,Closest to the original; only adds an empty displayName on the script step
+3,"Azure Batch Samples (Python, Java, .NET)",qwen2.5-coder:7b,Not correct,"Maven POM path is wrong (""pom.xml"" instead of $(System.DefaultWorkingDirectory)/Java/pom.xml), so the Java job would fail; pool set once at the top instead of per job (same effect)"
+3,"Azure Batch Samples (Python, Java, .NET)",qwen2.5-coder:14b,Correct,Everything matches; pool set once at the top instead of per job (same effect); extra display name on the script step
+3,"Azure Batch Samples (Python, Java, .NET)",deepseek-coder-v2:16b,Partially correct,"Uses the wrong Maven input name ""mavenPom"" (should be mavenPomFile), so the POM path is ignored; javaHomeOption missing; one script split into 4 steps"
+4,Todo App: Node.js + MongoDB on Azure (azd deploy),qwen2.5-coder:7b,Not correct,"No shell: pwsh, so the PowerShell login step fails; logs in with a masked (fake) secret; adds an unrelated az login pipe; env set at workflow level instead of job level"
+4,Todo App: Node.js + MongoDB on Azure (azd deploy),qwen2.5-coder:14b,Mostly correct,"Structure, env, pwsh and steps all right; masks the secret with Write-Host instead of ::add-mask:: (prints part of it in the logs); step name ""Install Node.js"" vs ""Install Nodejs"""
+4,Todo App: Node.js + MongoDB on Azure (azd deploy),deepseek-coder-v2:16b,Not correct,Invalid expression ${{ secrets... | jq }}; echoes the secret into the logs; federated login missing --client-id; uses azd provision flags that don't exist; no pwsh
+5,Java EE 7 Petstore: Deploy to Azure Web App,qwen2.5-coder:7b,Partially correct,"Adds a branches: [main] filter (the repo's branch is master, so it would never trigger); AZURE_WEBAPP_PUBLISH_PROFILE env missing"
+5,Java EE 7 Petstore: Deploy to Azure Web App,qwen2.5-coder:14b,Correct,"Matches the original: same triggers, all 7 env vars, all 5 steps"
+5,Java EE 7 Petstore: Deploy to Azure Web App,deepseek-coder-v2:16b,Mostly correct,"All env vars and steps right, but adds a branches: main filter the description didn't ask for"
